@@ -274,3 +274,93 @@ target_link_libraries(gsl_noexcept_tests
     gsl_tests_config_noexcept
 )
 add_test(gsl_noexcept_tests gsl_noexcept_tests)
+
+
+
+# find_package( PythonInterp 3.1 REQUIRED )
+
+# // TODO: https://stackoverflow.com/questions/26024235/how-to-call-a-cmake-function-from-add-custom-target-command
+
+
+# find_package( PythonInterp 3.1 REQUIRED )
+
+# include(compile_fail)
+message("${CMAKE_CURRENT_SOURCE_DIR}/delme/a.cpp")
+add_custom_command(OUTPUT timestamp
+    DEPENDS delme/a.cpp
+    COMMENT "brooo"
+    COMMAND ${CMAKE_COMMAND} -E touch timestamp
+    COMMAND /mnt/c/src/GSL/build/stupid.sh
+    COMMAND ${CMAKE_COMMAND} -P /mnt/c/src/GSL/cmake/testcmd.cmake
+)
+
+add_custom_target(
+  some_target ALL
+  DEPENDS /mnt/c/src/GSL/build/tests/timestamp
+)
+
+#
+# add_test_file(delme/a.cpp)
+
+# set(Files delme/a.cpp delme/b.cpp)
+#
+# message("${Files}")
+# foreach(fasdf ${Files})
+#     message("${Fasdf}")
+# endforeach()
+
+# add_executable(lmao compile_test_dummy.cpp)
+# add_custom_command(
+#     DEPENDS compile_test_dummy.cpp
+#     COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/process.py
+#     COMMAND ${CMAKE_COMMAND} -E touch my_file.stamp
+#     OUTPUT my_file.stamp
+#     COMMENT "Generating enums"
+# )
+
+# set_property(TARGET gsl_noexcept_tests APPEND PROPERTY OBJECT_DEPENDS my_file.stamp)
+# add_dependencies(lmao compile_test_dummy)
+
+# file (STRINGS "compilation_tests/umm.txt" BUILD_NUMBER)
+# string(SUBSTRING ${BUILD_NUMBER} 3 -1 BUILD_NUMBER)
+# message("${BUILD_NUMBER}")
+#
+# include(compile_fail)
+# file(GLOB compile_testfiles CONFIGURE_DEPENDS compilation_tests/_generated/*.cpp)
+# message("${compile_testfile}")
+# foreach(compile_testfile ${compile_testfiles})
+#     message("${compile_testfile}")
+#
+#     file (STRINGS ${compile_testfile} FailurePattern LIMIT_COUNT 1)
+#     string(SUBSTRING ${FailurePattern} 3 -1 FailurePattern)
+#     message("${FailurePattern}")
+#
+#   file(RELATIVE_PATH target "${CMAKE_CURRENT_SOURCE_DIR}" "${compile_testfile}")
+#   string(REPLACE .cpp "" target ${target})
+#   string(REPLACE / "." target ${target})
+#
+#   compile_fail(${target} "${compile_testfile}" ${FailurePattern})
+#   target_link_libraries(${target}
+#       Microsoft.GSL::GSL
+#   )
+# endforeach()
+
+
+# compile_fail(compile_test_dummy "compile_test_dummy.cpp")
+
+# add_executable(lmao EXCLUDE_FROM_ALL compile_test_dummy.cpp)
+
+# add_custom_target(
+#  run ALL
+#  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/process.py
+# #  BYPRODUCTS enums.h
+#  COMMENT "Generating enums"
+# )
+#
+# add_dependencies(lmao run)
+#
+#
+#
+# target_link_libraries(compile_test_dummy
+#     Microsoft.GSL::GSL
+# )
