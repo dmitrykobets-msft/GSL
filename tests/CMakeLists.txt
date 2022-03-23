@@ -277,90 +277,49 @@ add_test(gsl_noexcept_tests gsl_noexcept_tests)
 
 
 
-# find_package( PythonInterp 3.1 REQUIRED )
 
-# // TODO: https://stackoverflow.com/questions/26024235/how-to-call-a-cmake-function-from-add-custom-target-command
+function(add_compile_tests)
+    cmake_parse_arguments(
+        PARSED_ARGS # prefix of output variables
+        "" # list of names of the boolean arguments (only defined ones will be true)
+        "NAME" # list of names of mono-valued arguments
+        "SRCS;TEST_CASES" # list of names of multi-valued arguments (output variables are lists)
+        ${ARGN} # arguments of the function to parse, here we take the all original ones
+    )
+    if(NOT PARSED_ARGS_NAME)
+        message(FATAL_ERROR "Missing test name")
+    endif()
+    if(NOT PARSED_ARGS_SRCS)
+        message(FATAL_ERROR "Missing sources")
+    endif()
+    if(NOT PARSED_ARGS_TEST_CASES)
+        message(FATAL_ERROR "Missing testcases")
+    endif()
 
-
-# find_package( PythonInterp 3.1 REQUIRED )
-
-# include(compile_fail)
-message("${CMAKE_CURRENT_SOURCE_DIR}/delme/a.cpp")
-add_custom_command(OUTPUT timestamp
-    DEPENDS delme/a.cpp
-    COMMENT "brooo"
-    COMMAND ${CMAKE_COMMAND} -E touch timestamp
-    COMMAND /mnt/c/src/GSL/build/stupid.sh
-    COMMAND ${CMAKE_COMMAND} -P /mnt/c/src/GSL/cmake/testcmd.cmake
-)
-
-add_custom_target(
-  some_target ALL
-  DEPENDS /mnt/c/src/GSL/build/tests/timestamp
-)
-
-#
-# add_test_file(delme/a.cpp)
-
-# set(Files delme/a.cpp delme/b.cpp)
-#
-# message("${Files}")
-# foreach(fasdf ${Files})
-#     message("${Fasdf}")
-# endforeach()
-
-# add_executable(lmao compile_test_dummy.cpp)
-# add_custom_command(
-#     DEPENDS compile_test_dummy.cpp
-#     COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/process.py
-#     COMMAND ${CMAKE_COMMAND} -E touch my_file.stamp
-#     OUTPUT my_file.stamp
-#     COMMENT "Generating enums"
-# )
-
-# set_property(TARGET gsl_noexcept_tests APPEND PROPERTY OBJECT_DEPENDS my_file.stamp)
-# add_dependencies(lmao compile_test_dummy)
-
-# file (STRINGS "compilation_tests/umm.txt" BUILD_NUMBER)
-# string(SUBSTRING ${BUILD_NUMBER} 3 -1 BUILD_NUMBER)
-# message("${BUILD_NUMBER}")
-#
-# include(compile_fail)
-# file(GLOB compile_testfiles CONFIGURE_DEPENDS compilation_tests/_generated/*.cpp)
-# message("${compile_testfile}")
-# foreach(compile_testfile ${compile_testfiles})
-#     message("${compile_testfile}")
-#
-#     file (STRINGS ${compile_testfile} FailurePattern LIMIT_COUNT 1)
-#     string(SUBSTRING ${FailurePattern} 3 -1 FailurePattern)
-#     message("${FailurePattern}")
-#
-#   file(RELATIVE_PATH target "${CMAKE_CURRENT_SOURCE_DIR}" "${compile_testfile}")
-#   string(REPLACE .cpp "" target ${target})
-#   string(REPLACE / "." target ${target})
-#
-#   compile_fail(${target} "${compile_testfile}" ${FailurePattern})
-#   target_link_libraries(${target}
-#       Microsoft.GSL::GSL
-#   )
-# endforeach()
+    message("Provided sources are:")
+    foreach(src ${PARSED_ARGS_SRCS})
+        message("- ${src}")
+    endforeach()
+    message("Provided testcases are:")
+    foreach(testcase ${PARSED_ARGS_TEST_CASES})
+        message("- ${testcase}")
+    endforeach()
 
 
-# compile_fail(compile_test_dummy "compile_test_dummy.cpp")
+    foreach(frik ${PARSED_ARGS_TEST_CASES})
+        set(TARGET_NAME ${PARSED_ARGS_NAME}_${frik})
+        add_library(${TARGET_NAME}
+            ${PARSED_ARGS_SRCS})
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            EXCLUDE_FROM_ALL true
+            EXCLUDE_FROM_DEFAULT_BUILD true)
 
-# add_executable(lmao EXCLUDE_FROM_ALL compile_test_dummy.cpp)
+        target_compile_definitions(${TARGET_NAME} PUBLIC ${frik})
 
-# add_custom_target(
-#  run ALL
-#  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/process.py
-# #  BYPRODUCTS enums.h
-#  COMMENT "Generating enums"
-# )
-#
-# add_dependencies(lmao run)
-#
-#
-#
-# target_link_libraries(compile_test_dummy
-#     Microsoft.GSL::GSL
-# )
+        add_test(NAME ${TARGET_NAME}
+            COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}" --target ${TARGET_NAME} --config $<CONFIGURATION>)
+        set_tests_properties(${TARGET_NAME} PROPERTIES WILL_FAIL TRUE)
+    endforeach()
+endfunction()
+
+add_compile_tests(NAME dummy_compile_tests SRCS compile_tests/dummy.cpp TEST_CASES TEST1 TEST2)
