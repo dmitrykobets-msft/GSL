@@ -282,44 +282,83 @@ function(add_compile_tests)
     cmake_parse_arguments(
         PARSED_ARGS # prefix of output variables
         "" # list of names of the boolean arguments (only defined ones will be true)
-        "NAME" # list of names of mono-valued arguments
-        "SRCS;TEST_CASES" # list of names of multi-valued arguments (output variables are lists)
+        "NAME;SRC" # list of names of mono-valued arguments
+        "TEST_CASES" # list of names of multi-valued arguments (output variables are lists)
         ${ARGN} # arguments of the function to parse, here we take the all original ones
     )
     if(NOT PARSED_ARGS_NAME)
         message(FATAL_ERROR "Missing test name")
     endif()
-    if(NOT PARSED_ARGS_SRCS)
-        message(FATAL_ERROR "Missing sources")
+    if(NOT PARSED_ARGS_SRC)
+        message(FATAL_ERROR "Missing source file")
     endif()
     if(NOT PARSED_ARGS_TEST_CASES)
         message(FATAL_ERROR "Missing testcases")
     endif()
 
-    message("Provided sources are:")
-    foreach(src ${PARSED_ARGS_SRCS})
-        message("- ${src}")
-    endforeach()
-    message("Provided testcases are:")
-    foreach(testcase ${PARSED_ARGS_TEST_CASES})
-        message("- ${testcase}")
-    endforeach()
-
-
-    foreach(frik ${PARSED_ARGS_TEST_CASES})
-        set(TARGET_NAME ${PARSED_ARGS_NAME}_${frik})
+    foreach(TEST_CASE ${PARSED_ARGS_TEST_CASES})
+        set(TARGET_NAME ${PARSED_ARGS_NAME}_${TEST_CASE})
         add_library(${TARGET_NAME}
-            ${PARSED_ARGS_SRCS})
+            ${PARSED_ARGS_SRC})
         set_target_properties(${TARGET_NAME} PROPERTIES
             EXCLUDE_FROM_ALL true
             EXCLUDE_FROM_DEFAULT_BUILD true)
+        target_link_libraries(${TARGET_NAME} Microsoft.GSL::GSL)
 
-        target_compile_definitions(${TARGET_NAME} PUBLIC ${frik})
+        target_compile_definitions(${TARGET_NAME} PUBLIC ${TEST_CASE})
+
+        file(STRINGS ${PARSED_ARGS_SRC} LINE REGEX ${TEST_CASE})
+        if (NOT LINE)
+            message(FATAL_ERROR "${TEST_CASE} does not exist in file ${PARSED_ARGS_SRC}")
+        endif()
+        # message("${LINE}")
+        string(REGEX MATCH "\"(.*)\"" REGEX_WITH_QUOTES ${LINE})
+        # message("${CMAKE_MATCH_1}")
 
         add_test(NAME ${TARGET_NAME}
             COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}" --target ${TARGET_NAME} --config $<CONFIGURATION>)
-        set_tests_properties(${TARGET_NAME} PROPERTIES WILL_FAIL TRUE)
+        # set_tests_properties(${TARGET_NAME} PROPERTIES PASS_REGULAR_EXPRESSION ${CMAKE_MATCH_1})
+        # message("${CMAKE_CXX_COMPILER_ID}")
+        if ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND (CMAKE_MATCH_1))
+            set_tests_properties(${TARGET_NAME} PROPERTIES PASS_REGULAR_EXPRESSION ${CMAKE_MATCH_1})
+        else()
+            set_tests_properties(${TARGET_NAME} PROPERTIES WILL_FAIL true)
+        endif()
     endforeach()
 endfunction()
 
-add_compile_tests(NAME dummy_compile_tests SRCS compile_tests/dummy.cpp TEST_CASES TEST1 TEST2)
+
+add_compile_tests(NAME span_compile_tests SRC compile_tests/span.cpp TEST_CASES
+    from_array_constructor_TEST1
+    from_array_constructor_TEST2
+    from_array_constructor_TEST3
+    from_array_constructor_TEST4
+    from_array_constructor_TEST5
+    from_array_constructor_TEST6
+    from_array_constructor_TEST7
+    from_array_constructor_TEST8
+    from_array_constructor_TEST9
+    from_std_array_constructor_TEST1
+    from_std_array_constructor_TEST2
+    from_std_array_constructor_TEST3
+    from_std_array_constructor_TEST4
+    from_std_array_constructor_TEST5
+    from_std_array_constructor_TEST6
+    from_const_std_array_constructor_TEST1
+    from_const_std_array_constructor_TEST2
+    from_const_std_array_constructor_TEST3
+    from_std_array_const_constructor_TEST1
+    from_std_array_const_constructor_TEST2
+    from_std_array_const_constructor_TEST3
+    from_std_array_const_constructor_TEST4
+    from_container_constructor_TEST1
+    from_container_constructor_TEST2
+    from_container_constructor_TEST3
+    from_container_constructor_TEST4
+    from_container_constructor_TEST5
+    from_container_constructor_TEST6
+    from_convertible_span_constructor_TEST1
+    from_convertible_span_constructor_TEST2
+    from_convertible_span_constructor_TEST3
+    from_convertible_span_constructor_TEST4
+    )
