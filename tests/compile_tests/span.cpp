@@ -294,130 +294,93 @@ void from_convertible_span_constructor()
 #endif
 }
 
-void span_first()
+
+void as_writable_bytes()
+{
+    int a[] = {1, 2, 3, 4};
+
+#ifdef as_writable_bytes_TEST1 // "requirement '!std::is_const<const int>::value' was not satisfied"
+    {
+        // you should not be able to get writeable bytes for const objects
+        span<const int> s = a;
+        span<const byte> bs = as_writable_bytes(s);
+    }
+#endif
+}
+
+
+void fixed_size_conversions()
 {
     const auto terminateHandler = std::set_terminate([] {
-        std::cerr << "Expected Death. first";
+        std::cerr << "Expected Death. fixed_size_conversions";
         std::abort();
     });
     const auto expected = GetExpectedDeathString(terminateHandler);
 
-    int arr[5] = {1, 2, 3, 4, 5};
-    {
-        span<int, 5> av = arr;
+    int arr[] = {1, 2, 3, 4};
+    span<int, 4> s4 = arr;
 
-#ifdef span_first_TEST1 // "error: no viable conversion from 'span<int>' to 'span<short>'"
-        EXPECT_TRUE(av.first<6>().size() == 6);
-#endif
-#ifdef span_first_TEST1 // "error: no viable conversion from 'span<int>' to 'span<short>'"
-        EXPECT_TRUE(av.first<-1>().size() == -1);
-#endif
-#ifdef span_first_TEST1 // "error: no viable conversion from 'span<int>' to 'span<short>'"
-        EXPECT_DEATH(av.first(6).size(), expected);
-#endif
+// initialization or assignment to static span that REDUCES size is NOT ok
+#ifdef fixed_size_conversions_TEST1 // "error: no viable conversion from 'int \[4\]' to 'span<int, 2>'"
+    {
+        span<int, 2> s = arr;
     }
+#endif
+#ifdef fixed_size_conversions_TEST2 // "error: no viable conversion from 'span<\[\.\.\.\], 4>' to 'span<\[\.\.\.\], 2>'"
+    {
+        span<int, 2> s2 = s4;
+    }
+#endif
+
+
+#ifdef fixed_size_conversions_TEST3 // "error: no viable conversion from 'span<\[\.\.\.\], \(default\) dynamic_extent aka 18446744073709551615>' to 'const span<\[\.\.\.\], 2>'"
+    // even when done dynamically
+    {
+        // this now results in a compile-time error, rather than runtime.
+        // There is no suitable conversion from dynamic span to fixed span.
+        span<int> s = arr;
+        auto f = [&]() {
+            const span<int, 2> s2 = s;
+        };
+    }
+#endif
+
+
+#ifdef fixed_size_conversions_TEST4 // "error: no viable conversion from 'span<\[\.\.\.\], \(default\) dynamic_extent aka 18446744073709551615>' to 'const span<\[\.\.\.\], 4>'"
+     // There is no suitable conversion from dynamic span to a fixed size span.
+     span<int> av = arr;
+     auto f = [&]() {
+         const span<int, 4> _s4 = av;
+     };
+#endif
+
+#ifdef fixed_size_conversions_TEST5 // "error: no viable conversion from 'span<\[\.\.\.\], dynamic_extent aka 18446744073709551615>' to 'span<\[\.\.\.\], 1>'"
+     // this is not a legal operation in std::span, so we are no longer supporting it
+     // conversion from span<int, 4> to span<int, dynamic_extent> via call to `first`
+     // then convert from span<int, dynamic_extent> to span<int, 1>
+     // The dynamic to fixed extents are not supported in the standard
+     // to make this work, span<int, 1> would need to be span<int>.
+     {
+
+         // NB: implicit conversion to span<int,1> from span<int>
+         span<int, 1> s1 = s4.first(1);
+     }
+#endif
+
+    // initialization or assignment to static span that requires size INCREASE is not ok.
+    int arr2[2] = {1, 2};
+
+#ifdef fixed_size_conversions_TEST6 // "error: no viable conversion from 'int \[2\]' to 'span<int, 4>'"
+    {
+        span<int, 4> s3 = arr2;
+    }
+#endif
+#ifdef fixed_size_conversions_TEST7 // "error: no viable conversion from 'span<\[\.\.\.\], 2>' to 'span<\[\.\.\.\], 4>'"
+    {
+        span<int, 2> s2 = arr2;
+        span<int, 4> s4a = s2;
+    }
+#endif
+
 }
-//
-// TEST(span_test, last)
-// {
-//     const auto terminateHandler = std::set_terminate([] {
-//         std::cerr << "Expected Death. last";
-//         std::abort();
-//     });
-//     const auto expected = GetExpectedDeathString(terminateHandler);
-//
-//     int arr[5] = {1, 2, 3, 4, 5};
-//
-//     {
-//         span<int, 5> av = arr;
-//         EXPECT_TRUE(av.last<6>().size() == 6);
-//     }
-// }
-//
-// TEST(span_test, as_writable_bytes)
-// {
-//     int a[] = {1, 2, 3, 4};
-//
-//     {
-//         // you should not be able to get writeable bytes for const objects
-//         span<const int> s = a;
-//         EXPECT_TRUE(s.size() == 4);
-//         span<const byte> bs = as_writable_bytes(s);
-//         EXPECT_TRUE(static_cast<void*>(bs.data()) == static_cast<void*>(s.data()));
-//         EXPECT_TRUE(bs.size() == s.size_bytes());
-//     }
-// }
-//
-// TEST(span_test, fixed_size_conversions)
-// {
-//     const auto terminateHandler = std::set_terminate([] {
-//         std::cerr << "Expected Death. fixed_size_conversions";
-//         std::abort();
-//     });
-//     const auto expected = GetExpectedDeathString(terminateHandler);
-//
-//     int arr[] = {1, 2, 3, 4};
-//
-//     // converting to an span from an equal size array is ok
-//     span<int, 4> s4 = arr;
-//
-// // initialization or assignment to static span that REDUCES size is NOT ok
-//     {
-//         span<int, 2> s = arr;
-//     }
-//     {
-//         span<int, 2> s2 = s4;
-//         static_cast<void>(s2);
-//     }
-//
-//     // even when done dynamically
-//     {
-//         /*
-//         // this now results in a compile-time error, rather than runtime.
-//         // There is no suitable conversion from dynamic span to fixed span.
-//         span<int> s = arr;
-//         auto f = [&]() {
-//             const span<int, 2> s2 = s;
-//             static_cast<void>(s2);
-//         };
-//         EXPECT_DEATH(f(), expected);
-//         */
-//     }
-//
-//     /*
-//      // this is not a legal operation in std::span, so we are no longer supporting it
-//      // conversion from span<int, 4> to span<int, dynamic_extent> via call to `first`
-//      // then convert from span<int, dynamic_extent> to span<int, 1>
-//      // The dynamic to fixed extents are not supported in the standard
-//      // to make this work, span<int, 1> would need to be span<int>.
-//      {
-//
-//          // NB: implicit conversion to span<int,1> from span<int>
-//          span<int, 1> s1 = s4.first(1);
-//          static_cast<void>(s1);
-//      }
-//      */
-//
-//     // initialization or assignment to static span that requires size INCREASE is not ok.
-//     int arr2[2] = {1, 2};
-//
-//     {
-//         span<int, 4> s3 = arr2;
-//     }
-//     {
-//         span<int, 2> s2 = arr2;
-//         span<int, 4> s4a = s2;
-//     }
-//
-//     /*
-//      // This no longer compiles. There is no suitable conversion from dynamic span to a fixed size
-//      span.
-//      // this should fail - we are trying to assign a small dynamic span to a fixed_size larger one
-//      span<int> av = arr2; auto f = [&]() {
-//          const span<int, 4> _s4 = av;
-//          static_cast<void>(_s4);
-//      };
-//      EXPECT_DEATH(f(), expected);
-//      */
-// }
-//
+

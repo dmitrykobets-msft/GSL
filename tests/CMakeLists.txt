@@ -361,4 +361,13 @@ add_compile_tests(NAME span_compile_tests SRC compile_tests/span.cpp TEST_CASES
     from_convertible_span_constructor_TEST2
     from_convertible_span_constructor_TEST3
     from_convertible_span_constructor_TEST4
+    as_writable_bytes_TEST1
+    fixed_size_conversions_TEST1
+    fixed_size_conversions_TEST2
+    fixed_size_conversions_TEST3
+    fixed_size_conversions_TEST4
+    fixed_size_conversions_TEST5
+    fixed_size_conversions_TEST6
+    fixed_size_conversions_TEST7
     )
+
