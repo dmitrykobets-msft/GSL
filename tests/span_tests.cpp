@@ -558,6 +558,44 @@ TEST(span_test, from_std_array_const_constructor)
 #endif
 }
 
+TEST(span_test, from_string_constructor)
+{
+    {
+        std::string str = "hello";
+
+        span<char> s{str};
+        EXPECT_TRUE(s.size() == str.size());
+        EXPECT_TRUE(s.data() == str.data());
+        span<const char> cs{str};
+        EXPECT_TRUE(cs.size() == str.size());
+        EXPECT_TRUE(cs.data() == str.data());
+    }
+
+    {
+        const std::string cstr = "hello";
+
+#ifdef CONFIRM_COMPILATION_ERRORS
+        span<char> s{cstr};
+#endif
+        span<const char> cs{cstr};
+        EXPECT_TRUE(cs.size() == cstr.size());
+        EXPECT_TRUE(cs.data() == cstr.data());
+    }
+
+    {
+#ifdef CONFIRM_COMPILATION_ERRORS
+        span<char> s = "hello";
+#endif
+        span<const char> cs = "hello";
+
+        // span constructed from a string literal includes the null-terminator.
+        // whereas one constructed from a std::string does not
+        EXPECT_TRUE(cs.size() == 6);
+        EXPECT_TRUE(span<const char>{"hello"}.size() ==
+                    span<const char>{std::string("hello")}.size() + 1);
+    }
+}
+
 TEST(span_test, from_container_constructor)
 {
     std::vector<int> v = {1, 2, 3};
@@ -571,29 +609,6 @@ TEST(span_test, from_container_constructor)
         span<const int> cs{v};
         EXPECT_TRUE(cs.size() == v.size());
         EXPECT_TRUE(cs.data() == v.data());
-    }
-
-    std::string str = "hello";
-    const std::string cstr = "hello";
-
-    {
-#ifdef CONFIRM_COMPILATION_ERRORS
-        span<char> s{str};
-        EXPECT_TRUE(s.size() == str.size());
-         EXPECT_TRUE(s.data() == str.data()));
-#endif
-         span<const char> cs{str};
-         EXPECT_TRUE(cs.size() == str.size());
-         EXPECT_TRUE(cs.data() == str.data());
-    }
-
-    {
-#ifdef CONFIRM_COMPILATION_ERRORS
-        span<char> s{cstr};
-#endif
-        span<const char> cs{cstr};
-        EXPECT_TRUE(cs.size() == cstr.size());
-        EXPECT_TRUE(cs.data() == cstr.data());
     }
 
     {
@@ -1317,3 +1332,13 @@ TEST(span_test, std_span)
     EXPECT_TRUE(std_span.size() == gsl_span.size());
 }
 #endif // defined(FORCE_STD_SPAN_TESTS) || defined(__cpp_lib_span) && __cpp_lib_span >= 202002L
+
+TEST(span_test, const_conversion)
+{
+    int ints[] = {1, 2, 3};
+    span<int> s{ints};
+    span<const int> cs{s}; // should compile
+#ifdef CONFIRM_COMPILATION_ERRORS
+    span<int> s2{cs}; // fail to compile
+#endif
+}
